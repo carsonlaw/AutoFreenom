@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "AutoFreenom": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "environmentVariables": {
+        
+      }
+    }
+  }
+}
