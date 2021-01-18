@@ -187,6 +187,11 @@ namespace CheckWanIP
                             logger.Debug($"ip.txt存在，IP地址相同，当前IP{ip}");
                             return false;
                         }
+                        else if(string.IsNullOrEmpty(ip))
+                        {
+                            logger.Error($"ip.txt存在，获取IP地址为空{ip}");
+                            return false;
+                        }
                         else
                         {
                             using (StreamWriter sw = File.CreateText(path))
