@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace CheckWanIP
 {
@@ -20,12 +21,13 @@ namespace CheckWanIP
         private static readonly string[] urls = new string[] {
             "http://api.ipify.org/",
             "http://ifconfig.me/ip",
-            "https://ipinfo.io/ip",
+            //"https://ipinfo.io/ip",
             "http://icanhazip.com/"
         };
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
         private static HttpClient http;
+
         //private static IConfiguration conf;
 
         static async Task Main(string[] args)
@@ -47,8 +49,9 @@ namespace CheckWanIP
             {
                 try
                 {
+                    //http.Timeout = TimeSpan.FromMinutes(1);
                     var ip = await GetWanIPAsync();
-                    logger.Info($"Get IP：{ip}");
+                    logger.Info($"Get IP:{ip}");
                     //IP changed
                     if (await IsIPChanged(ip))
                     {
@@ -116,12 +119,12 @@ namespace CheckWanIP
                 logger.Debug($"response:{res}");
                 if (html.StatusCode == HttpStatusCode.OK)
                 {
-                    logger.Info($"set DNS to IP：{ip}");
+                    logger.Info($"set DNS to IP:{ip}");
                     return true;
                 }
             }
 
-            logger.Info($"set DNS to IP failure：{ip}");
+            logger.Info($"set DNS to IP failure:{ip}");
             return false;
 
         }
@@ -139,7 +142,7 @@ namespace CheckWanIP
             var response = await http.PutAsync("https://api.freenom.com/v2/nameserver/register", content);
             if (!response.IsSuccessStatusCode)
             {
-                logger.Error($"更新DNS出错，返回状态：{response.StatusCode}");
+                logger.Error($"Set DNS error!,StatusCode:{response.StatusCode}");
                 return false;
             }
             var xml = await response.Content.ReadAsStringAsync();
@@ -149,7 +152,7 @@ namespace CheckWanIP
             }
             else
             {
-                logger.Error($"更新DNS不成功，返回：{xml}");
+                logger.Error($"set DNS Fault!,Response:{xml}");
                 return false;
             }
         }
@@ -172,7 +175,7 @@ namespace CheckWanIP
                         {
                             sw.WriteLine(ip);
                         }
-                        logger.Debug($"ip.txt不存在，新建ip.txt，写入当前IP{ip}");
+                        logger.Debug($"ip.txt not exist,create ip.txt,IP{ip}");
                         return false;
                     }
                     else
@@ -184,12 +187,12 @@ namespace CheckWanIP
                         }
                         if (ip == oldip)
                         {
-                            logger.Debug($"ip.txt存在，IP地址相同，当前IP{ip}");
+                            logger.Debug($"ip.txt exist,IP not change,IP{ip}");
                             return false;
                         }
                         else if(string.IsNullOrEmpty(ip))
                         {
-                            logger.Error($"ip.txt存在，获取IP地址为空{ip}");
+                            logger.Error($"ip.txt exist,Get IP Fault{ip}");
                             return false;
                         }
                         else
@@ -198,7 +201,7 @@ namespace CheckWanIP
                             {
                                 sw.WriteLine(ip);
                             }
-                            logger.Debug($"ip.txt存在，IP地址不相同已更新ip.txt，旧IP{oldip}当前IP{ip}");
+                            logger.Debug($"ip.txt exist,IP changed, updated ip.txt,old IP{oldip},new IP{ip}");
                             return true;
                         }
 
@@ -219,21 +222,29 @@ namespace CheckWanIP
         /// <returns></returns>
         private static async Task<string> GetWanIPAsync()
         {
-            http.Timeout = TimeSpan.FromMinutes(1);
-            foreach (var url in urls)
+            var tasks = new List<Task<string>>();            
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(1*60*1000);
+            foreach(var url in urls)
             {
-                try
+                tasks.Add(http.GetStringAsync(url,cts.Token));
+            }
+            while(!cts.IsCancellationRequested)
+            {
+                if(tasks.Count<=0)
                 {
-                    var ip = await http.GetStringAsync(url);
-                    logger.Debug($"Get IP From {url}：{ip}");
-                    if (!string.IsNullOrEmpty(ip))
-                    {
-                        return ip;
-                    }
+                    logger.Error($"Can't get IP From {urls}");
+                    return null;
                 }
-                catch (Exception e)
+                var task = await Task.WhenAny(tasks);
+                var fromurl = urls[tasks.IndexOf(task)];
+                tasks.Remove(task);
+                var ip = (await task).Trim();
+                logger.Error($"get IP From {fromurl},IP{ip}");
+                if (task.IsCompletedSuccessfully && !string.IsNullOrEmpty(ip))
                 {
-                    logger.Error(e);
+                    cts.Cancel();
+                    return ip;
                 }
             }
             return null;
@@ -283,7 +294,7 @@ namespace CheckWanIP
         /// <returns></returns>
         private static async Task SetParams()
         {
-            DelayMinute = 10;
+            DelayMinute = 1;
             smtpPort = "25";
 
             int.TryParse(Environment.GetEnvironmentVariable(nameof(DelayMinute)) ?? DelayMinute.ToString(), out var DelayMinuteE);
