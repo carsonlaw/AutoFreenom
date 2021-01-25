@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace CheckWanIP
+namespace AutoFreenom
 {
     class Program
     {
@@ -114,7 +114,7 @@ namespace CheckWanIP
                     new KeyValuePair<string, string>("records[0][ttl]", "600"),
                     new KeyValuePair<string, string>("records[0][value]", ip)
                 });
-                html = await http.PostAsync($"https://my.freenom.com/clientarea.php?managedns={NomDomainName}&domainid={id}", content); 
+                html = await http.PostAsync($"https://my.freenom.com/clientarea.php?managedns={NomDomainName}&domainid={id}", content);
                 res = await html.Content.ReadAsStringAsync();
                 logger.Debug($"response:{res}");
                 if (html.StatusCode == HttpStatusCode.OK)
@@ -134,7 +134,7 @@ namespace CheckWanIP
         /// </summary>
         /// <param name="ip"></param>
         /// <returns></returns>
-        private static async Task<bool> UpdateDNSAPI(string ip)
+        /* private static async Task<bool> UpdateDNSAPI(string ip)
         {
             return false;
             var param = $"domainname={NomDomainName}&hostname={NomHostName}&ipaddress={ip}&email={NomEmail}&password={NomPass}";
@@ -156,7 +156,7 @@ namespace CheckWanIP
                 return false;
             }
         }
-
+ */
         /// <summary>
         /// Check ip changed
         /// </summary>
@@ -190,7 +190,7 @@ namespace CheckWanIP
                             logger.Debug($"ip.txt exist,IP not change,IP{ip}");
                             return false;
                         }
-                        else if(string.IsNullOrEmpty(ip))
+                        else if (string.IsNullOrEmpty(ip))
                         {
                             logger.Error($"ip.txt exist,Get IP Fault{ip}");
                             return false;
@@ -222,16 +222,16 @@ namespace CheckWanIP
         /// <returns></returns>
         private static async Task<string> GetWanIPAsync()
         {
-            var tasks = new List<Task<string>>();            
+            var tasks = new List<Task<string>>();
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(1*60*1000);
-            foreach(var url in urls)
+            cts.CancelAfter(1 * 60 * 1000);
+            foreach (var url in urls)
             {
-                tasks.Add(http.GetStringAsync(url,cts.Token));
+                tasks.Add(http.GetStringAsync(url, cts.Token));
             }
-            while(!cts.IsCancellationRequested)
+            while (!cts.IsCancellationRequested)
             {
-                if(tasks.Count<=0)
+                if (tasks.Count <= 0)
                 {
                     logger.Error($"Can't get IP From {urls}");
                     return null;
@@ -253,7 +253,7 @@ namespace CheckWanIP
         /// <summary>
         /// set email
         /// </summary>
-        private static async Task SendMail(string ip,bool isset)
+        private static async Task SendMail(string ip, bool isset)
         {
             SmtpClient smtp = new SmtpClient(smtpHost, int.Parse(smtpPort));
             smtp.UseDefaultCredentials = false;
@@ -294,24 +294,24 @@ namespace CheckWanIP
         /// <returns></returns>
         private static async Task SetParams()
         {
-            DelayMinute = 1;
-            smtpPort = "25";
+            await Task.Run(() =>
+            {
+                DelayMinute = 1;
+                smtpPort = "25";
 
-            int.TryParse(Environment.GetEnvironmentVariable(nameof(DelayMinute)) ?? DelayMinute.ToString(), out var DelayMinuteE);
-            DelayMinute = DelayMinuteE > 0 ? DelayMinuteE : DelayMinute;
-            NomDomainName = Environment.GetEnvironmentVariable(nameof(NomDomainName)) ?? NomDomainName;
-            NomHostName = Environment.GetEnvironmentVariable(nameof(NomHostName)) ?? NomHostName;
-            NomEmail = (Environment.GetEnvironmentVariable(nameof(NomEmail)) ?? NomEmail);
-            NomPass = (Environment.GetEnvironmentVariable(nameof(NomPass)) ?? NomPass);
+                int.TryParse(Environment.GetEnvironmentVariable(nameof(DelayMinute)) ?? DelayMinute.ToString(), out var DelayMinuteE);
+                DelayMinute = DelayMinuteE > 0 ? DelayMinuteE : DelayMinute;
+                NomDomainName = Environment.GetEnvironmentVariable(nameof(NomDomainName)) ?? NomDomainName;
+                NomHostName = Environment.GetEnvironmentVariable(nameof(NomHostName)) ?? NomHostName;
+                NomEmail = (Environment.GetEnvironmentVariable(nameof(NomEmail)) ?? NomEmail);
+                NomPass = (Environment.GetEnvironmentVariable(nameof(NomPass)) ?? NomPass);
 
-            smtpHost = Environment.GetEnvironmentVariable(nameof(smtpHost)) ?? smtpHost;
-            smtpPort = Environment.GetEnvironmentVariable(nameof(smtpPort)) ?? smtpPort;
-            smtpAccount = Environment.GetEnvironmentVariable(nameof(smtpAccount)) ?? smtpAccount;
-            smtpPassword = Environment.GetEnvironmentVariable(nameof(smtpPassword)) ?? smtpPassword;
-            smtpToAddress = Environment.GetEnvironmentVariable(nameof(smtpToAddress)) ?? smtpToAddress;
-
+                smtpHost = Environment.GetEnvironmentVariable(nameof(smtpHost)) ?? smtpHost;
+                smtpPort = Environment.GetEnvironmentVariable(nameof(smtpPort)) ?? smtpPort;
+                smtpAccount = Environment.GetEnvironmentVariable(nameof(smtpAccount)) ?? smtpAccount;
+                smtpPassword = Environment.GetEnvironmentVariable(nameof(smtpPassword)) ?? smtpPassword;
+                smtpToAddress = Environment.GetEnvironmentVariable(nameof(smtpToAddress)) ?? smtpToAddress;
+            });
         }
     }
-
-
 }

@@ -28,6 +28,18 @@ docker run -d --restart unless-stopped \
     -e smtpToAddress="revive@mail.com" \
     --name autofreenom registry.cn-chengdu.aliyuncs.com/esechi/autofreenom:latest
 ```
+ARM64
+```bash
+docker run -d --restart unless-stopped \
+    -e NomDomainName="yourdomain.ml" \
+    -e NomEmail="name@mail.com" \
+    -e NomPass="password" \
+    -e smtpHost="smtp.mail.com" \
+    -e smtpAccount="sent@mail.com" \
+    -e smtpPassword="password" \
+    -e smtpToAddress="revive@mail.com" \
+    --name autofreenom registry.cn-chengdu.aliyuncs.com/esechi/autofreenom:arm64
+```
 
 check logs
 

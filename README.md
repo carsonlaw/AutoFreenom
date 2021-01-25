@@ -28,6 +28,18 @@ docker run -d --restart unless-stopped \
     -e smtpToAddress="revive@mail.com" \
     --name autofreenom registry.cn-chengdu.aliyuncs.com/esechi/autofreenom:latest
 ```
+树莓派等arm架构
+```bash
+docker run -d --restart unless-stopped \
+    -e NomDomainName="yourdomain.ml" \
+    -e NomEmail="name@mail.com" \
+    -e NomPass="password" \
+    -e smtpHost="smtp.mail.com" \
+    -e smtpAccount="sent@mail.com" \
+    -e smtpPassword="password" \
+    -e smtpToAddress="revive@mail.com" \
+    --name autofreenom registry.cn-chengdu.aliyuncs.com/esechi/autofreenom:arm64
+```
 
 确认容器正常运行即可，如果IP发生变动，则自动更新域名A记录。
 查看日志或者更换ip后，查看是否生效
